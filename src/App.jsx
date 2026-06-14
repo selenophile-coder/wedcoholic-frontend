@@ -32,6 +32,7 @@ function BespokeAppContent() {
   // Products from MongoDB
   const [products, setProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   // Site Settings for Pop-up
   const [settings, setSettings] = useState(null);
@@ -114,6 +115,7 @@ function BespokeAppContent() {
       console.error('Error loading API data:', error);
     } finally {
       setLoadingProducts(false);
+      setInitialLoading(false);
     }
   };
 
@@ -282,7 +284,7 @@ function BespokeAppContent() {
       
       {/* Brand Preloader */}
       <AnimatePresence>
-        {loadingProducts && (
+        {initialLoading && (
           <motion.div
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
