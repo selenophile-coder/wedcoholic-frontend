@@ -75,6 +75,14 @@ function BespokeAppContent() {
     localStorage.setItem('wedcoholic_wishlist', JSON.stringify(wishlist));
   }, [wishlist]);
 
+  // Enforce brand preloader to fade out after 1.5 seconds maximum
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setInitialLoading(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
   const triggerNotification = (msg) => {
     setToastMessage(msg);
     setTimeout(() => {
