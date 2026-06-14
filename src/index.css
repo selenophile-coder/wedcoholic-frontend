@@ -1,0 +1,52 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Hanken+Grotesk:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #7A0C2E; /* Royal Wine Burgundy */
+  --color-secondary: #C5A880; /* Rich Champagne Gold */
+  --color-secondary-accent: #154230; /* Deep Forest Emerald */
+  --color-surface: #F8F5F0; /* Soft Pearl Linen */
+  --color-on-surface: #1E1C1A; /* Luxe Soft Obsidian */
+  --color-brand-bg: #FCFAF7; /* Alabaster Silk */
+  --color-outline-variant: #E0DAD0; /* Elegant Platinum/Linen Border */
+
+  --font-display: "Playfair Display", Georgia, serif;
+  --font-sans: "Hanken Grotesk", system-ui, sans-serif;
+}
+
+@layer utilities {
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .gold-shimmer {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(197, 168, 128, 0.2),
+      transparent
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2.5s infinite;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+body {
+  background-color: #FCFAF7;
+  color: #1E1C1A;
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+}
