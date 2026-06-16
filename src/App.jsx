@@ -24,7 +24,7 @@ import AdminDashboard from './components/admin/AdminDashboard';
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
 function BespokeAppContent() {
-  const { user, token, logout, isAdmin } = useContext(AuthContext);
+  const { user, token, logout, isAdmin, updateUser } = useContext(AuthContext);
 
   // Router View Switch ('shop' or 'admin')
   const [view, setView] = useState('shop');
@@ -55,6 +55,7 @@ function BespokeAppContent() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [profileActiveTab, setProfileActiveTab] = useState('orders'); // 'orders' or 'profile'
   const [showStoreLocator, setShowStoreLocator] = useState(false);
 
   // Active Interactive Overlays
@@ -351,14 +352,21 @@ function BespokeAppContent() {
           setIsCartOpen(false);
           setIsProfileOpen(false);
         }}
-        onProfileClick={() => {
+        onProfileClick={(tab = 'profile') => {
           if (user) {
+            setProfileActiveTab(tab);
             setIsProfileOpen(true);
             setIsCartOpen(false);
             setIsWishlistOpen(false);
           } else {
             setActiveModal('auth');
           }
+        }}
+        user={user}
+        onLogout={() => {
+          logout();
+          setIsProfileOpen(false);
+          triggerNotification("Logged out successfully.");
         }}
         selectedCategory={selectedCategory}
         onCategorySelect={(category) => {
@@ -925,7 +933,7 @@ function BespokeAppContent() {
                   <div className="absolute inset-0 bg-gradient-to-r from-primary to-[#5C061E] opacity-90"></div>
                   <div className="relative z-10 flex items-center gap-2">
                     <User className="w-5 h-5 text-white" />
-                    <h3 className="font-display text-xl font-bold">WedCoholic Salon</h3>
+                    <h3 className="font-display text-xl font-bold">WedCoholic</h3>
                   </div>
                   <button
                     onClick={() => setIsProfileOpen(false)}
@@ -977,125 +985,183 @@ function BespokeAppContent() {
                     )}
                   </div>
 
-                  {/* My Orders & Live Tracking */}
-                  <div className="mb-6">
-                    <div className="flex items-center justify-between mb-3 border-b pb-1.5 border-[#E0DAD0]/60">
-                      <h5 className="text-[10px] font-sans font-bold uppercase tracking-widest text-[#C5A880]">
-                        My Orders & Tracking
-                      </h5>
-                    </div>
-
-                    {userOrders.length === 0 ? (
-                      <div className="p-4 bg-white rounded-xl border border-[#E0DAD0] text-center text-on-surface/40">
-                        <ShoppingBag className="w-8 h-8 mx-auto mb-2 text-on-surface/20" />
-                        <p className="text-xs font-sans font-bold">No Active Orders</p>
-                        <p className="text-[10px] text-on-surface/50 mt-0.5">Your bespoke order tracking will display here once placed.</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-3.5 max-h-[300px] overflow-y-auto pr-1 scrollbar-thin">
-                        {userOrders.map((o) => {
-                          const stagesList = ['Pending', 'Confirmed', 'Packed', 'Shipped', 'Delivered'];
-                          const currentStageIdx = stagesList.indexOf(o.status);
-
-                          return (
-                            <div key={o._id} className="p-4 bg-white rounded-xl border border-[#E0DAD0] relative">
-                              <span className="absolute top-3.5 right-3.5 text-[8px] px-2 py-0.5 rounded-sm uppercase tracking-wider font-sans font-bold bg-primary/10 text-primary">
-                                {o.status}
-                              </span>
-                              <span className="font-mono text-[10px] font-bold text-on-surface select-all block">ID: {o._id}</span>
-                              <span className="text-[9px] text-on-surface/40 font-medium font-sans block mt-1">
-                                Date: {new Date(o.createdAt).toLocaleDateString()} | Price: ₹{o.totalPrice.toLocaleString('en-IN')}
-                              </span>
-
-                              {/* Progress Tracker Bar */}
-                              {['Returned', 'Cancelled', 'Defected'].includes(o.status) ? (
-                                <div className="mt-3.5 p-2 bg-red-50 border border-red-150 rounded-lg text-center text-red-700 text-[10px] font-sans font-bold uppercase tracking-wider">
-                                  Order Status: {o.status}
-                                </div>
-                              ) : (
-                                <div className="mt-3.5 space-y-1.5 border-t border-[#E0DAD0]/30 pt-3">
-                                  <div className="flex justify-between items-center text-[9px] font-sans font-bold uppercase tracking-wider text-on-surface/50">
-                                    <span>Track: <strong className="text-primary">{o.status}</strong></span>
-                                    <span>{Math.round((Math.max(currentStageIdx, 0) / (stagesList.length - 1)) * 100)}% Complete</span>
-                                  </div>
-                                  <div className="h-1.5 w-full bg-neutral-100 rounded-full overflow-hidden relative">
-                                    <div 
-                                      className="h-full bg-secondary transition-all duration-500 rounded-full"
-                                      style={{ width: `${(Math.max(currentStageIdx, 0) / (stagesList.length - 1)) * 100}%` }}
-                                    ></div>
-                                  </div>
-                                  <div className="flex justify-between text-[8px] font-sans font-bold text-on-surface/40 uppercase tracking-widest pt-0.5">
-                                    <span>Placed</span>
-                                    <span>Shipped</span>
-                                    <span>Delivered</span>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
+                  {/* Tabs Selector */}
+                  <div className="flex border-b border-[#E0DAD0] gap-4 select-none">
+                    <button
+                      onClick={() => setProfileActiveTab('orders')}
+                      className={`flex-1 pb-2.5 text-xs font-sans font-bold uppercase tracking-wider text-center border-b-2 cursor-pointer transition ${
+                        profileActiveTab === 'orders'
+                          ? 'text-primary border-primary'
+                          : 'text-on-surface/40 border-transparent hover:text-primary/70'
+                      }`}
+                    >
+                      Order History
+                    </button>
+                    <button
+                      onClick={() => setProfileActiveTab('profile')}
+                      className={`flex-1 pb-2.5 text-xs font-sans font-bold uppercase tracking-wider text-center border-b-2 cursor-pointer transition ${
+                        profileActiveTab === 'profile'
+                          ? 'text-primary border-primary'
+                          : 'text-on-surface/40 border-transparent hover:text-primary/70'
+                      }`}
+                    >
+                      Bookings & Account
+                    </button>
                   </div>
 
-                  {/* Consultation bookings */}
-                  <div>
-                    <div className="flex items-center justify-between mb-3 border-b pb-1.5 border-[#E0DAD0]/60">
-                      <h5 className="text-[10px] font-sans font-bold uppercase tracking-widest text-[#C5A880]">
-                        My Video Consultations
-                      </h5>
-                      <button
-                        onClick={() => {
-                          setIsProfileOpen(false);
-                          setActiveModal('consultation');
-                        }}
-                        className="text-[10px] font-sans font-bold uppercase text-primary hover:underline bg-transparent border-none cursor-pointer"
-                      >
-                        + Book New
-                      </button>
-                    </div>
+                  {profileActiveTab === 'orders' ? (
+                    /* TAB 1: Order History & Live Tracking */
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between mb-1 border-b pb-1.5 border-[#E0DAD0]/60">
+                        <h5 className="text-[10px] font-sans font-bold uppercase tracking-widest text-[#C5A880]">
+                          My Orders ({userOrders.length})
+                        </h5>
+                      </div>
 
-                    <div className="space-y-3.5">
-                      {bookings.length === 0 ? (
-                        <div className="p-4 bg-white rounded-xl border border-[#E0DAD0]/60 text-center text-on-surface/40">
-                          <Video className="w-8 h-8 mx-auto mb-2 text-on-surface/20" />
-                          <p className="text-xs font-sans font-bold">No Scheduled Consultations</p>
-                          <p className="text-[10px] text-on-surface/50 mt-0.5">Book a virtual styling session with our designers</p>
+                      {userOrders.length === 0 ? (
+                        <div className="p-4 bg-white rounded-xl border border-[#E0DAD0] text-center text-on-surface/40">
+                          <ShoppingBag className="w-8 h-8 mx-auto mb-2 text-on-surface/20" />
+                          <p className="text-xs font-sans font-bold">No Active Orders</p>
+                          <p className="text-[10px] text-on-surface/50 mt-0.5">Your bespoke order tracking will display here once placed.</p>
                         </div>
                       ) : (
-                        bookings.map((b) => (
-                        <div key={b._id || b.id} className="p-4 bg-white rounded-xl border border-[#E0DAD0] relative">
-                          <span className={`absolute top-3.5 right-3.5 text-[8px] px-2.5 py-0.5 rounded-sm uppercase tracking-wider font-sans font-bold ${
-                            b.status === 'Approved' ? 'bg-green-100 text-green-700' : 'bg-secondary/15 text-secondary'
-                          }`}>
-                            {b.status || 'PENDING'}
-                          </span>
-                          
-                          <h6 className="text-xs font-sans font-bold text-on-surface">{b.designer} House</h6>
-                          <p className="text-[11px] text-on-surface/75 mt-1">Focus Mode: {b.style}</p>
-                          
-                          <div className="flex gap-4 mt-3 pt-2.5 border-t border-[#E0DAD0]/30 text-[10px] text-on-surface/40 font-sans font-bold">
-                            <span className="flex items-center gap-1">
-                              <Calendar className="w-3.5 h-3.5 text-secondary" /> {b.date}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Video className="w-3.5 h-3.5 text-secondary-accent" /> {b.time}
-                            </span>
-                          </div>
-                        </div>
-                      )))}
-                    </div>
-                  </div>
+                        <div className="space-y-3.5 max-h-[350px] overflow-y-auto pr-1 scrollbar-thin">
+                          {userOrders.map((o) => {
+                            const stagesList = ['Pending', 'Confirmed', 'Packed', 'Shipped', 'Delivered'];
+                            const currentStageIdx = stagesList.indexOf(o.status);
 
-                  {/* Authentic Guarantee */}
-                  <div className="p-4 bg-[#FCFAF7] border border-[#E0DAD0] rounded-xl">
-                    <span className="text-[10px] font-sans font-bold tracking-widest text-[#C5A880] uppercase block mb-1">
-                      Authentic Guarantee
-                    </span>
-                    <p className="text-[11px] text-on-surface/70 leading-relaxed font-sans font-medium">
-                      Every garment carries digital cryptographic authentication labels tags to confirm legitimate original design licensing from premium weavers.
-                    </p>
-                  </div>
+                            return (
+                              <div key={o._id} className="p-4 bg-white rounded-xl border border-[#E0DAD0] relative">
+                                <span className="absolute top-3.5 right-3.5 text-[8px] px-2 py-0.5 rounded-sm uppercase tracking-wider font-sans font-bold bg-primary/10 text-primary">
+                                  {o.status}
+                                </span>
+                                <span className="font-mono text-[10px] font-bold text-on-surface select-all block">ID: {o._id}</span>
+                                <span className="text-[9px] text-on-surface/40 font-medium font-sans block mt-1">
+                                  Date: {new Date(o.createdAt).toLocaleDateString()} | Price: ₹{o.totalPrice.toLocaleString('en-IN')}
+                                </span>
+
+                                {/* Progress Tracker Bar */}
+                                {['Returned', 'Cancelled', 'Defected'].includes(o.status) ? (
+                                  <div className="mt-3.5 p-2 bg-red-50 border border-red-150 rounded-lg text-center text-red-700 text-[10px] font-sans font-bold uppercase tracking-wider">
+                                    Order Status: {o.status}
+                                  </div>
+                                ) : (
+                                  <div className="mt-3.5 space-y-1.5 border-t border-[#E0DAD0]/30 pt-3">
+                                    <div className="flex justify-between items-center text-[9px] font-sans font-bold uppercase tracking-wider text-on-surface/50">
+                                      <span>Track: <strong className="text-primary">{o.status}</strong></span>
+                                      <span>{Math.round((Math.max(currentStageIdx, 0) / (stagesList.length - 1)) * 100)}% Complete</span>
+                                    </div>
+                                    <div className="h-1.5 w-full bg-neutral-100 rounded-full overflow-hidden relative">
+                                      <div 
+                                        className="h-full bg-secondary transition-all duration-500 rounded-full"
+                                        style={{ width: `${(Math.max(currentStageIdx, 0) / (stagesList.length - 1)) * 100}%` }}
+                                      ></div>
+                                    </div>
+                                    <div className="flex justify-between items-center pt-2">
+                                      <button
+                                        onClick={() => {
+                                          setIsProfileOpen(false);
+                                          setTrackingOrderId(o._id);
+                                          setActiveModal('track-order');
+                                        }}
+                                        className="text-[9px] font-sans font-bold uppercase text-primary hover:underline transition cursor-pointer border-none bg-transparent"
+                                      >
+                                        Track order console
+                                      </button>
+                                      <span className="text-[8px] font-sans font-bold text-on-surface/30 uppercase tracking-wider">
+                                        Tailored Couture
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    /* TAB 2: Bookings, Saved Info & Guarantees */
+                    <div className="space-y-6">
+                      {/* Consultation bookings */}
+                      <div>
+                        <div className="flex items-center justify-between mb-3 border-b pb-1.5 border-[#E0DAD0]/60">
+                          <h5 className="text-[10px] font-sans font-bold uppercase tracking-widest text-[#C5A880]">
+                            Video Consultations
+                          </h5>
+                          <button
+                            onClick={() => {
+                              setIsProfileOpen(false);
+                              setActiveModal('consultation');
+                            }}
+                            className="text-[10px] font-sans font-bold uppercase text-primary hover:underline bg-transparent border-none cursor-pointer"
+                          >
+                            + Book New
+                          </button>
+                        </div>
+
+                        <div className="space-y-3.5">
+                          {bookings.length === 0 ? (
+                            <div className="p-4 bg-white rounded-xl border border-[#E0DAD0]/60 text-center text-on-surface/40">
+                              <Video className="w-8 h-8 mx-auto mb-2 text-on-surface/20" />
+                              <p className="text-xs font-sans font-bold">No Scheduled Consultations</p>
+                              <p className="text-[10px] text-on-surface/50 mt-0.5">Book a virtual styling session with our designers</p>
+                            </div>
+                          ) : (
+                            bookings.map((b) => (
+                            <div key={b._id || b.id} className="p-4 bg-white rounded-xl border border-[#E0DAD0] relative">
+                              <span className={`absolute top-3.5 right-3.5 text-[8px] px-2.5 py-0.5 rounded-sm uppercase tracking-wider font-sans font-bold ${
+                                b.status === 'Approved' ? 'bg-green-100 text-green-700' : 'bg-secondary/15 text-secondary'
+                              }`}>
+                                {b.status || 'PENDING'}
+                              </span>
+                              
+                              <h6 className="text-xs font-sans font-bold text-on-surface">{b.designer} House</h6>
+                              <p className="text-[11px] text-on-surface/75 mt-1">Focus Mode: {b.style}</p>
+                              
+                              <div className="flex gap-4 mt-3 pt-2.5 border-t border-[#E0DAD0]/30 text-[10px] text-on-surface/40 font-sans font-bold">
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="w-3.5 h-3.5 text-secondary" /> {b.date}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Video className="w-3.5 h-3.5 text-secondary-accent" /> {b.time}
+                                </span>
+                              </div>
+                            </div>
+                          )))}
+                        </div>
+                      </div>
+
+                      {/* Saved Address Info */}
+                      {user && (user.address || user.phone) && (
+                        <div className="p-4 bg-white rounded-xl border border-[#E0DAD0] space-y-2">
+                          <h5 className="text-[10px] font-sans font-bold uppercase tracking-widest text-[#C5A880] border-b pb-1.5 border-[#E0DAD0]/60">
+                            Saved Shipping Address
+                          </h5>
+                          {user.phone && <p className="text-xs font-sans text-on-surface"><strong>Phone:</strong> {user.phone}</p>}
+                          {user.address && (
+                            <p className="text-xs font-sans text-on-surface leading-relaxed">
+                              <strong>Address:</strong><br />
+                              {user.address}, {user.city}, {user.state} - {user.zip}
+                            </p>
+                          )}
+                          <p className="text-[9px] text-on-surface/40 italic">
+                            *Automatically prefilled on your next order checkout.
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Authentic Guarantee */}
+                      <div className="p-4 bg-[#FCFAF7] border border-[#E0DAD0] rounded-xl">
+                        <span className="text-[10px] font-sans font-bold tracking-widest text-[#C5A880] uppercase block mb-1">
+                          Authentic Guarantee
+                        </span>
+                        <p className="text-[11px] text-on-surface/70 leading-relaxed font-sans font-medium">
+                          Every garment carries digital cryptographic authentication labels tags to confirm legitimate original design licensing from premium weavers.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="p-6 bg-white border-t border-[#E0DAD0]/50 text-center text-[10px] text-on-surface/40 select-none uppercase tracking-widest font-bold">
@@ -1130,6 +1196,7 @@ function BespokeAppContent() {
         totalPrice={cartSubtotal}
         user={user}
         token={token}
+        updateUser={updateUser}
         onOrderSuccess={() => {
           setCart([]);
           fetchUserOrders();
@@ -1173,6 +1240,7 @@ function BespokeAppContent() {
           setTrackingOrderId('');
         }}
         initialOrderId={trackingOrderId}
+        token={token}
       />
 
       {/* 6. Support & Policy Info Modal */}

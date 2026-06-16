@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, User, Heart, ShoppingBag } from 'lucide-react';
+import { Search, User, Heart, ShoppingBag, ChevronDown, LogOut, History, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function Header({
@@ -15,6 +15,8 @@ export default function Header({
   products = [],
   onProductQuickView,
   onTrackOrderClick,
+  user = null,
+  onLogout = null,
 }) {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
@@ -61,16 +63,16 @@ export default function Header({
             {/* Mobile Actions (Hidden on desktop) */}
             <div className="flex flex-col items-end gap-1 md:hidden select-none">
               <div className="flex items-center gap-3">
-                <motion.button 
-                  id="user-profile-btn-mobile"
-                  onClick={onProfileClick}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="p-1.5 text-on-surface hover:text-primary transition-colors cursor-pointer border-none bg-transparent"
-                  title="Profile"
-                >
-                  <User className="w-5 h-5" />
-                </motion.button>
+                  <motion.button 
+                    id="user-profile-btn-mobile"
+                    onClick={() => onProfileClick()}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="p-1.5 text-on-surface hover:text-primary transition-colors cursor-pointer border-none bg-transparent flex items-center gap-0.5"
+                    title="Profile"
+                  >
+                    <User className="w-5 h-5" />
+                  </motion.button>
                 
                 <motion.button 
                   id="wishlist-drawer-btn-mobile"
@@ -104,13 +106,6 @@ export default function Header({
                   )}
                 </motion.button>
               </div>
-              <button
-                type="button"
-                onClick={onTrackOrderClick}
-                className="text-[9px] font-sans font-bold uppercase tracking-widest text-[#C5A880] hover:text-primary transition-colors cursor-pointer border-none bg-transparent mr-1.5"
-              >
-                Track Order
-              </button>
             </div>
           </div>
 
@@ -176,18 +171,19 @@ export default function Header({
           {/* Desktop-only Actions row (Hidden on mobile) */}
           <div className="hidden md:flex flex-col items-end gap-1 justify-center shrink-0 z-10 select-none">
             <div className="flex items-center gap-3 sm:gap-6">
-              {/* Account Profile */}
-              <motion.button 
-                id="user-profile-btn"
-                onClick={onProfileClick}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="p-1.5 text-on-surface hover:text-primary transition-colors duration-200 relative group cursor-pointer border-none bg-transparent"
-                title="Profile & Bookings"
-              >
-                <User className="w-5 h-5 md:w-5.5 md:h-5.5" />
-                <span className="absolute bottom-0 right-1.5 w-1.5 h-1.5 rounded-full bg-secondary-accent scale-0 group-hover:scale-100 transition-transform duration-200"></span>
-              </motion.button>
+              <div className="relative" id="user-menu-dropdown-container">
+                <motion.button 
+                  id="user-profile-btn"
+                  onClick={() => onProfileClick()}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="p-1.5 text-on-surface hover:text-primary transition-colors duration-200 relative flex items-center gap-1 group cursor-pointer border-none bg-transparent"
+                  title={user ? `Hello, ${user.name}` : "Profile & Bookings"}
+                >
+                  <User className="w-5 h-5 md:w-5.5 md:h-5.5" />
+                  <span className="absolute bottom-0 right-1.5 w-1.5 h-1.5 rounded-full bg-secondary-accent scale-0 group-hover:scale-100 transition-transform duration-200"></span>
+                </motion.button>
+              </div>
 
               {/* Wishlist */}
               <motion.button 
@@ -231,13 +227,6 @@ export default function Header({
                 )}
               </motion.button>
             </div>
-            <button
-              type="button"
-              onClick={onTrackOrderClick}
-              className="text-[10px] font-sans font-bold uppercase tracking-widest text-[#C5A880] hover:text-primary transition-colors cursor-pointer border-none bg-transparent mr-1.5"
-            >
-              Track Order
-            </button>
           </div>
 
         </div>

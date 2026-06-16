@@ -689,7 +689,13 @@ export default function AdminDashboard({ onExit }) {
                       </td>
                       <td className="p-4">
                         <h4 className="font-sans font-bold text-neutral-200">{order.guestDetails?.name || 'Guest User'}</h4>
-                        <p className="text-[10px] text-neutral-500 font-medium font-sans">{order.guestDetails?.email}</p>
+                        <p className="text-[10px] text-neutral-300 font-medium font-sans">{order.guestDetails?.email}</p>
+                        {order.guestDetails?.phone && <p className="text-[10px] text-neutral-400 font-sans mt-0.5 font-semibold">{order.guestDetails.phone}</p>}
+                        {order.guestDetails?.address && (
+                          <p className="text-[10px] text-neutral-500 font-sans mt-1 leading-relaxed max-w-[220px] break-words whitespace-pre-wrap">
+                            {order.guestDetails.address}, {order.guestDetails.city}, {order.guestDetails.state} - {order.guestDetails.zip}
+                          </p>
+                        )}
                       </td>
                       <td className="p-4">
                         <div className="space-y-1">

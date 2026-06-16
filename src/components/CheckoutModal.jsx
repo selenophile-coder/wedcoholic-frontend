@@ -10,6 +10,7 @@ export default function CheckoutModal({
   totalPrice,
   user = null,
   token = '',
+  updateUser = null,
 }) {
   const [formData, setFormData] = useState({
     name: '',
@@ -40,9 +41,13 @@ export default function CheckoutModal({
         name: user?.name || prev.name || '',
         email: user?.email || prev.email || '',
         phone: user?.phone || prev.phone || '',
+        address: user?.address || prev.address || '',
+        city: user?.city || prev.city || '',
+        state: user?.state || prev.state || '',
+        zip: user?.zip || prev.zip || '',
       }));
     }
-  }, [isOpen, user]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -93,6 +98,9 @@ export default function CheckoutModal({
         setCreatedOrder(data.order);
         setIsSubmitting(false);
         setIsSuccess(true);
+        if (data.user && updateUser) {
+          updateUser(data.user);
+        }
       } else {
         const data = await response.json();
         alert(data.message || 'Payment processing failed');

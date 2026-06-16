@@ -151,6 +151,14 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('wedcoholic_token');
   };
 
+  const updateUser = (updatedUserData) => {
+    setUser((prev) => {
+      const newUser = prev ? { ...prev, ...updatedUserData } : updatedUserData;
+      localStorage.setItem('wedcoholic_user', JSON.stringify(newUser));
+      return newUser;
+    });
+  };
+
   const isAdmin = user && (user.role === 'admin' || user.role === 'superadmin');
 
   return (
@@ -166,6 +174,7 @@ export const AuthProvider = ({ children }) => {
         signup,
         verifyOtp,
         logout,
+        updateUser,
       }}
     >
       {children}

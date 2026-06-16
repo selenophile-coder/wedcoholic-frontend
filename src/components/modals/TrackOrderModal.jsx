@@ -2,11 +2,46 @@ import React, { useState } from 'react';
 import { X, Search, ShieldCheck, Truck, Package, Check, HelpCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-export default function TrackOrderModal({ isOpen, onClose }) {
+export default function TrackOrderModal({ isOpen, onClose, initialOrderId = '', token = '' }) {
   const [orderId, setOrderId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [orderData, setOrderData] = useState(null);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setOrderId(initialOrderId);
+      if (initialOrderId) {
+        const fetchOrder = async () => {
+          setLoading(true);
+          setError(null);
+          setOrderData(null);
+          const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+          try {
+            const response = await fetch(`${API_BASE}/orders/track/${initialOrderId.trim()}`, {
+              headers: token ? { Authorization: `Bearer ${token}` } : {},
+            });
+            if (response.ok) {
+              const data = await response.json();
+              setOrderData(data);
+            } else {
+              const errData = await response.json();
+              setError(errData.message || 'Order not found. Please verify the ID.');
+            }
+          } catch (err) {
+            console.error(err);
+            setError('Network error. Please try again.');
+          } finally {
+            setLoading(false);
+          }
+        };
+        fetchOrder();
+      } else {
+        setOrderData(null);
+        setError(null);
+      }
+    }
+  }, [isOpen, initialOrderId]);
 
   if (!isOpen) return null;
 
@@ -21,7 +56,9 @@ export default function TrackOrderModal({ isOpen, onClose }) {
     const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
     try {
-      const response = await fetch(`${API_BASE}/orders/track/${orderId.trim()}`);
+      const response = await fetch(`${API_BASE}/orders/track/${orderId.trim()}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       if (response.ok) {
         const data = await response.json();
         setOrderData(data);
