@@ -1,10 +1,12 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Lock, Mail, User, Phone, CheckCircle, ArrowRight, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 
 export default function AuthModal({ isOpen, onClose, onAuthSuccess, onPolicyClick }) {
   const { login, signup, verifyOtp, verifyStage2 } = useContext(AuthContext);
+  
+  const abortControllerRef = useRef(null);
   
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -70,6 +72,14 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, onPolicyClic
 
     const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
+    // Abort any existing active request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const signal = controller.signal;
+
     if (forgotPasswordStep === 'request') {
       if (!validate()) return;
       setIsLoading(true);
@@ -78,6 +88,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, onPolicyClic
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email }),
+          signal,
         });
         const data = await response.json();
         setIsLoading(false);
@@ -90,6 +101,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, onPolicyClic
           setServerError(data.message || 'Failed to send OTP code');
         }
       } catch (err) {
+        if (err.name === 'AbortError') return;
         setIsLoading(false);
         setServerError('Network error. Please try again later.');
       }
@@ -104,6 +116,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, onPolicyClic
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, otp: otpCode, newPassword: password }),
+          signal,
         });
         const data = await response.json();
         setIsLoading(false);
@@ -117,6 +130,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, onPolicyClic
           setServerError(data.message || 'Failed to reset password');
         }
       } catch (err) {
+        if (err.name === 'AbortError') return;
         setIsLoading(false);
         setServerError('Network error. Please try again later.');
       }
@@ -126,7 +140,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, onPolicyClic
     if (isStage2Pending) {
       // Handle Super Admin Verify (Stage 2)
       setIsLoading(true);
-      const res = await verifyStage2(superAdminEmail, superAdminPassword);
+      const res = await verifyStage2(superAdminEmail, superAdminPassword, signal);
+      if (res.aborted) return;
       setIsLoading(false);
 
       if (res.success) {
@@ -145,7 +160,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, onPolicyClic
         return;
       }
       setIsLoading(true);
-      const res = await verifyOtp(signupEmail, otpCode);
+      const res = await verifyOtp(signupEmail, otpCode, signal);
+      if (res.aborted) return;
       setIsLoading(false);
 
       if (res.success) {
@@ -162,7 +178,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, onPolicyClic
     setIsLoading(true);
 
     if (isLogin) {
-      const res = await login(email, password);
+      const res = await login(email, password, signal);
+      if (res.aborted) return;
       setIsLoading(false);
 
       if (res.error) {
@@ -175,7 +192,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, onPolicyClic
       }
     } else {
       // Signup Flow
-      const res = await signup(name, email, phone, password);
+      const res = await signup(name, email, phone, password, signal);
+      if (res.aborted) return;
       setIsLoading(false);
 
       if (res.error) {
@@ -189,6 +207,10 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, onPolicyClic
   };
 
   const handleClose = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
     if (isOtpSent && signupEmail) {
       fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/auth/cancel-signup`, {
         method: 'POST',

@@ -19,7 +19,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const login = async (email, password) => {
+  const login = async (email, password, signal) => {
     setIsLoading(true);
     setError(null);
     try {
@@ -29,6 +29,7 @@ export const AuthProvider = ({ children }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, password }),
+        signal,
       });
 
       const data = await response.json();
@@ -49,13 +50,16 @@ export const AuthProvider = ({ children }) => {
       setIsLoading(false);
       return { success: true, user: data };
     } catch (err) {
+      if (err.name === 'AbortError') {
+        return { aborted: true };
+      }
       setError(err.message);
       setIsLoading(false);
       return { error: err.message };
     }
   };
 
-  const verifyStage2 = async (email, password) => {
+  const verifyStage2 = async (email, password, signal) => {
     setIsLoading(true);
     setError(null);
     try {
@@ -65,6 +69,7 @@ export const AuthProvider = ({ children }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, password }),
+        signal,
       });
 
       const data = await response.json();
@@ -80,13 +85,16 @@ export const AuthProvider = ({ children }) => {
       setIsLoading(false);
       return { success: true, user: data };
     } catch (err) {
+      if (err.name === 'AbortError') {
+        return { aborted: true };
+      }
       setError(err.message);
       setIsLoading(false);
       return { error: err.message };
     }
   };
 
-  const signup = async (name, email, phone, password) => {
+  const signup = async (name, email, phone, password, signal) => {
     setIsLoading(true);
     setError(null);
     try {
@@ -96,6 +104,7 @@ export const AuthProvider = ({ children }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ name, email, phone, password }),
+        signal,
       });
 
       const data = await response.json();
@@ -107,13 +116,16 @@ export const AuthProvider = ({ children }) => {
       setIsLoading(false);
       return { success: true, email: data.email, otpFallback: data.otpFallback };
     } catch (err) {
+      if (err.name === 'AbortError') {
+        return { aborted: true };
+      }
       setError(err.message);
       setIsLoading(false);
       return { error: err.message };
     }
   };
 
-  const verifyOtp = async (email, otp) => {
+  const verifyOtp = async (email, otp, signal) => {
     setIsLoading(true);
     setError(null);
     try {
@@ -123,6 +135,7 @@ export const AuthProvider = ({ children }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, otp }),
+        signal,
       });
 
       const data = await response.json();
@@ -138,6 +151,9 @@ export const AuthProvider = ({ children }) => {
       setIsLoading(false);
       return { success: true, user: data };
     } catch (err) {
+      if (err.name === 'AbortError') {
+        return { aborted: true };
+      }
       setError(err.message);
       setIsLoading(false);
       return { error: err.message };
